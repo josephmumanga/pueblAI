@@ -1,0 +1,480 @@
+function fontsize() {    
+    var currenValue = parseFloat(localStorage.getItem("valueFontsize")) || 0; 
+    var maxIncrement = 6;
+    var minIncrement = -6;
+    var jumpValue = 2;
+
+    var setFontsize = function(element, currenValue, operacion = '+') {
+        var currentSize = parseFloat(window.getComputedStyle(element, null).getPropertyValue('font-size'));
+        if (isNaN(currentSize)) return;
+        var newSize = operacion == '+' ? (parseFloat(currentSize) + parseFloat(currenValue)) + 'px' : (parseFloat(currentSize) - parseFloat(currenValue)) + 'px';
+        element.style.fontSize = newSize;
+    };
+
+    const checkElements = function (parent, currenValue, operacion = '+') {
+        let child = null;
+        for (var i = 0; i < parent.childNodes.length; i++) {
+            child = parent.childNodes[i];
+            
+            if (child.nodeName === '#text' && child.textContent.trim() !== '' && child.textContent.trim() !== '\n' && child.textContent.trim() !== '\t' && child.textContent.trim() !== '') {
+                let parent = child.parentElement;
+                setFontsize(parent, currenValue, operacion);
+            } else {
+                checkElements(child, currenValue, operacion);
+            }
+        }
+    }
+
+    let parent = document.body;
+    checkElements(parent, currenValue);
+
+    var btnReduceFontsize = document.querySelector('#btn-reduce-fontsize');
+    btnReduceFontsize.addEventListener('click', function (e) {
+        if (currenValue <= minIncrement) {
+            currenValue = minIncrement;
+            localStorage.setItem("valueFontsize", currenValue);
+            return;
+        }
+
+        currenValue -= jumpValue;
+        localStorage.setItem("valueFontsize", currenValue);
+
+        checkElements(parent, jumpValue, '-');
+    });
+
+    var btnIncrmentFontsize = document.querySelector('#btn-increment-fontsize');
+    btnIncrmentFontsize.addEventListener('click', function (e) {
+        if (currenValue >= maxIncrement) {
+            currenValue = maxIncrement;
+            localStorage.setItem("valueFontsize", currenValue);
+            return;
+        }
+
+        currenValue += jumpValue;
+        localStorage.setItem("valueFontsize", currenValue);
+
+        checkElements(parent, jumpValue);
+    });
+}
+
+function setBottomWindow(bottom) {
+    const ukPositionBottomRight = document.querySelector('.btn-margin');
+    ukPositionBottomRight.style.bottom = bottom;
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const storedBottomValue = localStorage.getItem("bottomValue");
+    if (storedBottomValue) {
+        setBottomWindow(storedBottomValue);
+    }
+});
+
+function applyContrastMode(mode) {
+    const body = document.body;
+    const images = document.querySelectorAll('img');
+
+    switch (mode) {
+        case 'dark':
+            body.classList.add('b-acc-dark');
+            body.style.filter = '';
+            images.forEach(img => {
+                img.style.filter = '';
+            });
+            break;
+        case 'grayscale':
+            body.classList.remove('b-acc-dark');
+            body.style.filter = 'grayscale(100%)';
+            images.forEach(img => {
+                img.style.filter = '';
+            });
+            break;
+        case 'brightness':
+            body.classList.remove('b-acc-dark');
+            body.style.filter = '';
+            images.forEach(img => {
+                img.style.filter = '';
+            });
+            break;
+        default:
+            break;
+    }
+
+    localStorage.setItem("activeContrastMode", mode);
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const activeContrastMode = localStorage.getItem("activeContrastMode");
+    if (activeContrastMode) {
+        applyContrastMode(activeContrastMode);
+    }
+});
+
+function contraste() {
+    const reduceBrightnessButton = document.getElementById('reduceBrightnessButton');
+    reduceBrightnessButton.addEventListener('click', function () {
+        applyContrastMode('dark');
+    });
+
+    const setGrayscaleButton = document.getElementById('setGrayscaleButton');
+    setGrayscaleButton.addEventListener('click', function () {
+        applyContrastMode('grayscale');
+    });
+
+    const increaseBrightnessButton = document.getElementById('increaseBrightnessButton');
+    increaseBrightnessButton.addEventListener('click', function () {
+        applyContrastMode('brightness');
+    });
+}
+
+
+
+function regla() {
+    let rulerActive = false;
+    let rule = document.querySelector('#rulerSVG');
+    if (!rule) return;
+
+    function toggleRuler() {
+        if (rulerActive) {
+            hideRuler();
+        } else {
+            showRulerAtCenter();
+        }
+    }
+
+    function showRulerAtCenter() {
+        rulerActive = true;
+        console.log(rule, rulerActive);
+        rule.style.display = "block";
+        const windowHeight = window.innerHeight;
+        const rulerHeight = rule.offsetHeight;
+        const centerPosition = (windowHeight - rulerHeight) / 2;
+        rule.style.top = centerPosition + "px";
+    }
+
+    function hideRuler() {
+        rulerActive = false;
+        rule.style.display = "none";
+    }
+
+    const toggleButton = document.getElementById("toggleButton");
+    toggleButton.addEventListener("click", toggleRuler);
+
+    window.addEventListener("mousemove", function (e) {
+        if (rulerActive) {
+            const mouseY = e.clientY + window.scrollY;
+            rule.style.top = mouseY + "px";
+        }
+    });
+
+    // Guardar y recuperar el estado de la regla
+    const rulerState = localStorage.getItem("rulerState");
+    if (rulerState === "true") {
+        showRulerAtCenter();
+    } else {
+        hideRuler();
+    }
+}
+
+function lecturavoz() {
+    var isSpeechEnabled = false;
+    var textToRead = null;
+    var textChunks = [];
+
+    function toggleSpeech() {
+        isSpeechEnabled = !isSpeechEnabled;
+    
+        if (isSpeechEnabled) {
+            speak("lector activado");
+            startSpeechForAll();
+        } else {
+            stopSpeechForAll();
+            speak("lector desactivado");
+            textToRead = null;  // Reiniciar el estado al desactivar
+            textChunks = [];
+        }
+    
+        // Guardar el estado en localStorage
+        localStorage.setItem("speechState", isSpeechEnabled ? "true" : "false");
+    }
+    
+    
+    function enterEvent() {
+        textToRead = this;
+        startSpeech();
+    }
+
+    function leaveEvent() {
+        stopSpeech();
+    }
+
+    function focusEvent() {
+        textToRead = this;
+
+        if (this.tagName.toLowerCase() === "select") {
+            // Leer el contenido del elemento select
+            startSpeech(this.textContent || this.innerText);
+
+            // Agregar un manejador de eventos para detectar cambios en la selección del select
+            this.addEventListener("change", function (event) {
+                var selectedOption = event.target.options[event.target.selectedIndex];
+                if (selectedOption) {
+                    var ariaLabel = selectedOption.getAttribute("aria-label");
+                    if (ariaLabel) {
+                        startSpeech(ariaLabel);
+                    }
+                }
+            });
+        } else {
+            // Si no es un select, verificar si es parte de una tabla
+            var tableCell = findParentTableCell(this);
+            if (tableCell) {
+                // Leer solo el contenido de la celda
+                startSpeech(tableCell.textContent || tableCell.innerText);
+            } else {
+                // Si no es parte de una tabla, leer el contenido del elemento
+                startSpeech(this.textContent || this.innerText);
+            }
+        }
+    }
+
+    function blurEvent() {
+        stopSpeech();
+    }
+
+    function findParentTableCell(element) {
+        // Buscar el elemento padre que sea una celda de tabla (td o th)
+        while (element) {
+            if (element.tagName.toLowerCase() === "td" || element.tagName.toLowerCase() === "th") {
+                return element;
+            }
+            element = element.parentElement;
+        }
+        return null;
+    }
+
+    function startSpeechForAll() {
+        var elementsToRead = document.querySelectorAll("[tabindex='0'], div, p, button, h1, h2, h3, h4, h5, h6, li, a, img, iframe, input, i, span, g, title, label, select, option");
+
+        elementsToRead.forEach(function (element) {
+            element.addEventListener("mouseenter", enterEvent);
+            element.addEventListener("mouseleave", leaveEvent);
+            element.addEventListener("focus", focusEvent);
+            element.addEventListener("blur", blurEvent);
+
+            if (element.tagName.toLowerCase() === "select") {
+                var options = element.querySelectorAll("option");
+                options.forEach(function (option) {
+                    option.addEventListener("mouseenter", enterEvent);
+                    option.addEventListener("mouseleave", leaveEvent);
+                    option.addEventListener("focus", focusEvent);
+                    option.addEventListener("blur", blurEvent);
+                });
+            }
+
+            if (element.tagName.toLowerCase() === "a") {
+                var altText = element.getAttribute('alt');
+                if (altText && altText.trim().toLowerCase().endsWith('')) {
+                    element.addEventListener("focus", function () {
+                        if (isSpeechEnabled) {
+                            speak("vínculo interno");
+                        }
+                    });
+                }
+            }
+        });
+
+        // Agregar eventos de escucha a las celdas de la tabla
+        var tableCells = document.querySelectorAll("td, th");
+        tableCells.forEach(function (cell) {
+            cell.addEventListener("mouseenter", enterEvent);
+            cell.addEventListener("mouseleave", leaveEvent);
+            cell.addEventListener("focus", focusEvent);
+            cell.addEventListener("blur", blurEvent);
+        });
+    }
+
+    function speak(text) {
+        if ('speechSynthesis' in window) {
+            // Dividir el texto en fragmentos más pequeños
+            textChunks = text.match(/.{1,100}/g) || [];
+
+            // Iniciar la síntesis de voz con el primer fragmento
+            speakNextChunk();
+        } else {
+            alert("Lo siento, tu navegador no es compatible con la síntesis de voz.");
+        }
+    }
+
+    function speakNextChunk() {
+        if (textChunks.length > 0) {
+            var chunk = textChunks.shift();
+            var speech = new SpeechSynthesisUtterance(chunk);
+            speech.lang = 'es-ES';
+            speech.rate = 1.0;
+            speech.pitch = 1.0;
+
+            speech.addEventListener('end', function () {
+                // Llamada recursiva para leer el siguiente fragmento
+                speakNextChunk();
+            });
+
+            speechSynthesis.speak(speech);
+        }
+    }
+
+    function stopSpeechForAll() {
+        // Verificar si la síntesis de voz está habilitada antes de intentar detenerla
+        if ('speechSynthesis' in window) {
+            var elementsWithText = document.querySelectorAll("[tabindex='0'], div, p, h1, h2, h3, h4, h5, h6, li, a, button, iframe, input, i, span, g, title, label,value");
+
+            elementsWithText.forEach(function (element) {
+                element.removeEventListener("mouseenter", enterEvent);
+                element.removeEventListener("mouseleave", leaveEvent);
+                element.removeEventListener("focus", focusEvent);
+                element.removeEventListener("blur", blurEvent);
+            });
+
+            // Eliminar eventos de escucha de las celdas de la tabla
+            var tableCells = document.querySelectorAll("td, th");
+            tableCells.forEach(function (cell) {
+                cell.removeEventListener("mouseenter", enterEvent);
+                cell.removeEventListener("mouseleave", leaveEvent);
+                cell.removeEventListener("focus", focusEvent);
+                cell.removeEventListener("blur", blurEvent);
+            });
+
+            speechSynthesis.cancel();
+        }
+    }
+
+    function startSpeech() {
+        if (textToRead && isSpeechEnabled) {
+            var text;
+            var additionalContent = "";
+    
+            if (textToRead.tagName.toLowerCase() === "img") {
+                // Si es una imagen, obtener el texto del atributo 'alt'
+                text = textToRead.getAttribute("alt");
+            } else {
+                // Para otros elementos, intentar obtener el texto del atributo personalizado
+                text = textToRead.getAttribute("data-speech-text");
+                if (!text) {
+                    // Si no hay atributo personalizado, obtener el texto del contenido
+                    text = textToRead.textContent || textToRead.innerText;
+                }
+            }
+    
+            var hasPlaceholder = textToRead.getAttribute("placeholder");
+            var hasAriaLabel = textToRead.getAttribute("aria-label");
+            var title = textToRead.getAttribute("title");
+    
+            if (hasAriaLabel || hasPlaceholder || text || title) {
+                text = hasAriaLabel || hasPlaceholder || text || title;
+            }
+    
+            if (!text) {
+                text = textToRead.innerText;
+            }
+    
+            // Verificar el tipo de elemento y agregar texto adicional
+            switch (textToRead.tagName.toLowerCase()) {
+                case "a":
+                    additionalContent = " link";
+                    break;
+                case "button":
+                    additionalContent = " botón";
+                    break;
+                case "svg":
+                    additionalContent = " icono";
+                    break;
+                case "g":
+                    additionalContent = " grupo";
+                    break;
+                // Agrega más casos según sea necesario
+            }
+    
+            if (text && textToRead.tagName.toLowerCase() === "a") {
+                // Agregar el texto adicional solo para elementos <a>
+                text = text + additionalContent;
+            }
+    
+            speak(text);
+        }
+    }
+    
+    
+
+    function stopSpeech() {
+        if (textToRead && isSpeechEnabled) {
+            speechSynthesis.cancel();
+            textToRead = null;
+            textChunks = [];
+        }
+    }
+
+    var toggleButton = document.getElementById("toggleSpeech");
+    if (toggleButton) {
+        toggleButton.addEventListener("click", toggleSpeech);
+    }
+
+    // Guardar y recuperar el estado de la función de lectura de voz
+    const activeSpeechState = localStorage.getItem("speechState");
+    if (activeSpeechState === "true") {
+        toggleSpeech();
+    }
+}
+
+
+
+
+function resetAll() {
+    // Simular clic en el botón de lectura de voz para activarlo
+    var toggleSpeechButton = document.getElementById("toggleSpeech");
+    if (toggleSpeechButton) {
+        toggleSpeechButton.click();
+    }
+
+    // Simular clic en el botón de la regla para activarla
+    var toggleButton = document.getElementById("toggleButton");
+    if (toggleButton) {
+        toggleButton.click();
+    }
+
+    // Resto del código...
+
+    localStorage.removeItem("valueFontsize");
+
+    // Restablecer el tamaño de fuente a su valor inicial
+    var elements = document.querySelectorAll("*");
+    elements.forEach((element) => {
+        element.style.fontSize = ""; // Tamaño de fuente inicial
+    });
+
+    localStorage.removeItem("activeContrastMode");
+    applyContrastMode('brightness');
+
+    // Remove the "Restaurar Configuracion" button
+    var resetButton = document.getElementById("resetButton");
+    if (resetButton) {
+        resetButton.remove();
+    }
+}
+ 
+
+document.addEventListener("DOMContentLoaded", function () {
+    const resetButton = document.getElementById("resetButton");
+    resetButton.addEventListener("click", resetAll);
+});
+
+
+document.addEventListener('readystatechange', function (event) {
+    if (event.target.readyState === "complete") {
+        fontsize();
+        contraste();
+        regla();
+        lecturavoz();
+        enableZoom();
+        resetAll()
+    }
+});
+
